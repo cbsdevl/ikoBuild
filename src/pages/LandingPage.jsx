@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import {
   Zap, Code2, Globe, Database, Shield, Rocket, ChevronRight,
-  Star, Check, ChevronDown, Twitter, Github, Linkedin, Play
+  Star, Check, ChevronDown, Play
 } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 
@@ -363,9 +363,9 @@ export default function LandingPage() {
           </div>
           <p className="text-slate-500 text-sm">© 2025 IkoBuild. All rights reserved.</p>
           <div className="flex items-center gap-4">
-            <a href="#" className="text-slate-500 hover:text-white transition-colors"><Twitter size={18} /></a>
-            <a href="#" className="text-slate-500 hover:text-white transition-colors"><Github size={18} /></a>
-            <a href="#" className="text-slate-500 hover:text-white transition-colors"><Linkedin size={18} /></a>
+            <a href="#" className="text-slate-500 hover:text-white transition-colors"></a>
+            <a href="#" className="text-slate-500 hover:text-white transition-colors"></a>
+            <a href="#" className="text-slate-500 hover:text-white transition-colors"></a>
           </div>
         </div>
       </footer>

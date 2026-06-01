@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Code2, Mail, Lock, User, Chrome, Eye, EyeOff, ArrowLeft, Loader2 } from 'lucide-react'
+import { Code2, Mail, Lock, User, Eye, EyeOff, ArrowLeft, Loader2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import {
   signUpWithEmail,

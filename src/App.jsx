@@ -6,12 +6,24 @@ import DashboardPage from '@/pages/DashboardPage'
 import NewProjectPage from '@/pages/NewProjectPage'
 import WorkspacePage from '@/pages/WorkspacePage'
 
+import { useEffect } from 'react'
+
 function PrivateRoute({ children }) {
-  const { user } = useAuthStore()
+  const { user, loading } = useAuthStore()
+
+  // Wait for auth initialization to finish to avoid redirect loops
+  if (loading) return null
+
   return user ? children : <Navigate to="/auth" replace />
 }
 
 export default function App() {
+  const { initialize } = useAuthStore()
+
+  useEffect(() => {
+    initialize()
+  }, [initialize])
+
   return (
     <Routes>
       <Route path="/" element={<LandingPage />} />
@@ -44,3 +56,4 @@ export default function App() {
     </Routes>
   )
 }
+
