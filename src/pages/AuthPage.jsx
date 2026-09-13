@@ -14,16 +14,17 @@ import { useAuthStore } from '@/store/authStore'
 export default function AuthPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const { user } = useAuthStore()
+  const { user, isAdmin } = useAuthStore()
 
   const [mode, setMode] = useState(searchParams.get('signup') === 'true' ? 'signup' : 'login')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [form, setForm] = useState({ name: '', email: '', password: '' })
 
+  // If user is already logged in, send admins to /admin, others to /dashboard
   useEffect(() => {
-    if (user) navigate('/dashboard')
-  }, [user, navigate])
+    if (user) navigate(isAdmin ? '/admin' : '/dashboard', { replace: true })
+  }, [user, isAdmin, navigate])
 
   const update = (k, v) => setForm((f) => ({ ...f, [k]: v }))
 

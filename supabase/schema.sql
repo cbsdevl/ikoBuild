@@ -235,3 +235,105 @@ CREATE TRIGGER trg_project_files_updated_at
 CREATE TRIGGER trg_subscriptions_updated_at
   BEFORE UPDATE ON subscriptions
   FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ============================================================
+-- Profiles (public user metadata + admin flag)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS profiles (
+  id          UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  email       TEXT,
+  full_name   TEXT,
+  avatar_url  TEXT,
+  is_admin    BOOLEAN DEFAULT FALSE,
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Auto-create profile when a new user signs up
+CREATE OR REPLACE FUNCTION handle_new_user()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, full_name, avatar_url)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    NEW.raw_user_meta_data->>'full_name',
+    NEW.raw_user_meta_data->>'avatar_url'
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE TRIGGER trg_on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION handle_new_user();
+
+-- Trigger: keep profile updated_at fresh
+CREATE TRIGGER trg_profiles_updated_at
+  BEFORE UPDATE ON profiles
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- ============================================================
+-- Profiles RLS
+-- ============================================================
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+
+-- Users can read/update their own profile
+CREATE POLICY "Users can read own profile" ON profiles
+  FOR SELECT USING (auth.uid() = id);
+
+CREATE POLICY "Users can update own profile" ON profiles
+  FOR UPDATE USING (auth.uid() = id);
+
+CREATE POLICY "Users can insert own profile" ON profiles
+  FOR INSERT WITH CHECK (auth.uid() = id);
+
+-- Admins can read all profiles
+CREATE POLICY "Admins can read all profiles" ON profiles
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = TRUE)
+  );
+
+-- ============================================================
+-- Admin bypass policies (admins can read all rows in main tables)
+-- ============================================================
+
+-- Projects: admin read-all
+CREATE POLICY "Admins can read all projects" ON projects
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = TRUE)
+  );
+
+-- Subscriptions: admin read-all
+CREATE POLICY "Admins can read all subscriptions" ON subscriptions
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = TRUE)
+  );
+
+-- Subscriptions: admin can update (e.g. change plan)
+CREATE POLICY "Admins can update subscriptions" ON subscriptions
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = TRUE)
+  );
+
+-- Usage logs: admin read-all
+CREATE POLICY "Admins can read all usage logs" ON usage_logs
+  FOR SELECT USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = TRUE)
+  );
+
+-- Profiles: admin can update (promote/demote)
+CREATE POLICY "Admins can update all profiles" ON profiles
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = TRUE)
+  );
+
+-- ============================================================
+-- Seed: backfill profiles for existing auth.users
+-- (Safe to run multiple times — ON CONFLICT DO NOTHING)
+-- ============================================================
+INSERT INTO profiles (id, email, full_name)
+SELECT id, email, raw_user_meta_data->>'full_name'
+FROM auth.users
+ON CONFLICT (id) DO NOTHING;

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion'
 import {
   Plus, FolderOpen, Rocket, Zap, Code2, MoreVertical,
   Trash2, ExternalLink, Clock, LogOut, Settings, User,
-  TrendingUp, Activity, Database
+  TrendingUp, Activity, Database, Shield, Crown,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '@/store/authStore'
@@ -24,11 +24,16 @@ const STATUS_COLORS = {
 }
 
 export default function DashboardPage() {
-  const { user, signOut } = useAuthStore()
+  const { user, signOut, isAdmin } = useAuthStore()
   const navigate = useNavigate()
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [menuOpen, setMenuOpen] = useState(null)
+
+  // Redirect admin users straight to the admin panel
+  useEffect(() => {
+    if (isAdmin) navigate('/admin', { replace: true })
+  }, [isAdmin, navigate])
 
   useEffect(() => {
     loadProjects()
@@ -104,6 +109,17 @@ export default function DashboardPage() {
                 <div className="px-3 py-2 border-b border-glass">
                   <div className="text-xs text-slate-500 truncate">{user?.email}</div>
                 </div>
+                {isAdmin && (
+                  <>
+                    <button
+                      onClick={() => navigate('/admin')}
+                      className="flex items-center gap-2 w-full px-3 py-2 text-sm text-yellow-400 hover:text-yellow-300 hover:bg-yellow-500/5 transition-colors"
+                    >
+                      <Crown size={14} /> Admin Panel
+                    </button>
+                    <div className="border-t border-glass my-1" />
+                  </>
+                )}
                 <button className="flex items-center gap-2 w-full px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors">
                   <Settings size={14} /> Settings
                 </button>
